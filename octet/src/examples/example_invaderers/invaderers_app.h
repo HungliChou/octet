@@ -540,8 +540,118 @@ namespace octet {
 		{
 			texture = _texture;
 		}
+	class weapon : public sprite {
+		//the type of weapon
+		int type;
+
+		//the power of weapon
+		int power;
+
+		//disable time of weapon
+		int disable_time;
+
+		//how many time we can use this weapon(0->unlimited,>0->limited)
+		int energy;
+
+		//the texture name in the asset folder
+		//char asset_name;
+
+	public:
+		weapon() { type = 1; power = 1; disable_time = 5; energy = -1; }
+		weapon(int _type, int _power, int _disable_time, int _energy) { type = _type; power = _power; disable_time = _disable_time; energy = _energy; }
+		int &get_type() { return type; }
+		int &get_power() { return power; }
+		int &get_disable_time() { return disable_time; }
+		int &get_energy() { return energy; }
+	};
+
+	class icon : public sprite {
+		//the type of icon
+		int type;
+	public:
+		icon() { type = 0; }
+		icon(int _type) { type = _type; }
+		int &get_type() { return type; }
+	};
+
+	class enemy : public sprite {
+		// invarder lives
+		int lives;
+
+		// invader level
+		int level;
+
+	public:
+		enemy() { lives = 1; level = 1; }
+
+		int &get_level()
+		{
+			return level;
+		}
+
+		int &get_lives()
+		{
+			return lives;
+		}
+
+		void set_level(int _level)
+		{
+			lives = _level;
+			level = _level;
+		}
+	};
+
+	class player : public sprite {
+		int lives;
+		weapon my_weapon;
+	public:
+		player() { lives = 6; }
+		player(int _lives) { lives = _lives; }
+
+		//return lives
+		int &get_lives() { return lives; }
+
+		// change different weapons
+		//void set_weapon(weapon _weapon){my_weapon = _weapon;}
+
+		weapon &get_weapon() { return my_weapon; }
+	};
+			num_icon = 4,
 			num_max_stage = 3,
 			type_invader = 1,
+			type_weapon,
+			type_icon,
+			//invaders sprite definitions
+			first_invaderer_sprite = 0,
+			last_invaderer_sprite = first_invaderer_sprite + num_invaderers - 1,
+
+			//weapon sprite definitions
+			first_missile_sprite = 0,
+			last_missile_sprite = first_missile_sprite + num_missiles - 1,
+
+			first_bomb_sprite,
+			last_bomb_sprite = first_bomb_sprite + num_bombs - 1,
+			num_weapon_sprites,
+			//weapon icon sprite definitions
+			first_icon_sprite = 0,
+			last_icon_sprite = first_icon_sprite + num_icon - 1,
+			//icon definitions
+			icon_ball = 0,
+			icon_lightning,
+			icon_slow,
+			icon_star,
+
+		int icon_disabled;
+		// big array of sprites
+		sprite sprites[num_sprites];
+		// big array of invader sprites
+		enemy invader_sprite[num_invaderers];
+		// big array of weapon sprites
+		weapon weapon_sprite[num_weapon_sprites];
+		// big array of icon_sprites
+		icon icon_sprite[num_icon];
+		// player sprite
+		player man;
 		void generate_invaders()
 		{
 			GLuint invaderer = resource_dict::get_texture_handle(GL_RGBA, texture_position(stage, type_invader));;
@@ -622,8 +732,125 @@ namespace octet {
 				}
 				//path = path_array;
 			}
+			else if (type == type_weapon)
+			{
+				switch (value)
+				{
+				case icon_lightning:
+					path = "assets/invaderers/lightning.gif";
+					break;
+				default:
+					path = "assets/invaderers/ball.gif";
+					break;
+				}
+			}
+			else if (type == type_icon)
+			{
+				switch (value)
+				{
+				case icon_lightning:
+					path = "assets/invaderers/icon_lightning.gif";
+					break;
+				case icon_slow:
+					path = "assets/invaderers/icon_slow.gif";
+					break;
+				case icon_star:
+					path = "assets/invaderers/icon_star.gif";
+					break;
+				default:
+					path = "assets/invaderers/ball.gif";
+					break;
+				}
+			}
 			return path;
 		}
+		// called when we hit an enemy
+		void on_hit_invaderer(enemy &invaderer) {
+			ALuint source = get_sound_source();
+			GLuint newtexture;
+			icon &icon = icon_sprite[first_icon_sprite];
+			alSourcei(source, AL_BUFFER, bang);
+			alSourcePlay(source);
+			printf("live: %d", invaderer.get_lives());
+			int lives = invaderer.get_lives() - 1;
+			int level = invaderer.get_level();
+			if (lives == 0)
+			{
+				if (icon_disabled == 0)
+				{
+					for (int i = 0; i != num_icon; ++i) {
+						icon = icon_sprite[first_icon_sprite + i];
+						if (!icon.is_enabled()) {
+							int random_weapon = randomizer.get(1, num_icon);
+							newtexture = resource_dict::get_texture_handle(GL_RGBA, texture_position(random_weapon, type_icon));
+							//newtexture = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/ball.gif");
+							icon.set_relative(invaderer, 0, 0);
+							icon.get_type() = random_weapon;
+							icon.is_enabled() = true;
+							icon.set_texture(newtexture);
+							icon_disabled = 200;
+							printf("icon:%d", i);
+
+							//ALuint source = get_sound_source();
+							//alSourcei(source, AL_BUFFER, whoosh);
+							//alSourcePlay(source);
+							break;
+						}
+					}
+				}
+
+				invaderer.is_enabled() = false;
+				invaderer.translate(20, 0);
+				live_invaderers--;
+				score = score + 10 * level*level;
+
+			}
+			else
+			{
+				//char *tex_pos = texture_position(lives);
+				//printf(tex_pos);
+				if (stage > 1)
+				{
+					newtexture = resource_dict::get_texture_handle(GL_RGBA, texture_position(lives, type_invader));
+				}
+
+				invaderer.set_texture(newtexture);
+				invaderer.render(texture_shader_, cameraToWorld);
+				invaderer.get_lives() = lives;
+			}
+
+
+
+			if (live_invaderers == 4) {
+				invader_velocity *= 4;
+			}
+			else if (live_invaderers == 0) {
+				printf("stage:%d", stage);
+				if (stage<num_max_stage)
+					set_next_stage();
+				else
+				{
+					game_over = true;
+					sprites[game_over_sprite].translate(-20, 0);
+				}
+			}
+		}
+		// called when we are hit
+		void on_hit_ship() {
+			ALuint source = get_sound_source();
+			alSourcei(source, AL_BUFFER, bang);
+			alSourcePlay(source);
+
+			int cur_lives = man.get_lives();
+			cur_lives--;
+			man.get_lives() = cur_lives;
+
+			if (cur_lives == 0) {
+				game_over = true;
+				sprites[game_over_sprite].translate(-20, 0);
+			}
+		}
+
 		// use the keyboard to move the ship
 		void move_ship() {
 			const float ship_speed = 0.1f;
@@ -669,6 +896,143 @@ namespace octet {
 					upY -= ship_speed;
 			}
 		}
+		// fire button (space)
+		void fire_missiles() {
+
+			if (man.get_weapon().get_type() != icon_ball)
+			{
+				if (man.get_weapon().get_energy() > 0)
+					man.get_weapon().get_energy()--;
+				else
+				{
+					if (man.get_weapon().get_type() == icon_slow)
+						slow_invader(false);
+					change_weapon(icon_ball);
+				}
+			}
+
+
+			if (man.get_weapon().get_type() == icon_lightning)
+			{
+				weapon &my_weapon = weapon_sprite[first_missile_sprite];
+				if (!my_weapon.is_enabled())
+				{
+					if (is_key_down(' '))
+					{
+						my_weapon.set_relative(man, 0, 2.5f);
+						my_weapon.is_enabled() = true;
+						printf("D");
+					}
+				}
+			}
+			else
+			{
+				if (missiles_disabled) {
+					--missiles_disabled;
+				}
+				else if (is_key_down(' ')) {
+					// find a missile
+					for (int i = 0; i != num_missiles; ++i) {
+						if (!weapon_sprite[first_missile_sprite + i].is_enabled()) {
+							weapon_sprite[first_missile_sprite + i].set_relative(man, 0, 0);
+							weapon_sprite[first_missile_sprite + i].is_enabled() = true;
+							missiles_disabled = man.get_weapon().get_disable_time();
+							ALuint source = get_sound_source();
+							alSourcei(source, AL_BUFFER, whoosh);
+							alSourcePlay(source);
+							break;
+						}
+					}
+				}
+			}
+		}
+		void move_icon() {
+			if (icon_disabled > 0)
+				icon_disabled--;
+			const float icon_speed = 0.05f;
+			for (int j = 0; j != num_icon; ++j) {
+				icon &icon = icon_sprite[first_icon_sprite + j];
+				if (icon.is_enabled()) {
+					icon.translate(0, -icon_speed);
+					if (icon.collides_with(man)) {
+						icon.is_enabled() = false;
+						icon.translate(20, 0);
+						change_weapon(icon.get_type());
+						//on_hit_ship();
+						goto next_icon;
+					}
+					if (icon.collides_with(sprites[first_border_sprite + 0])) {
+						icon.is_enabled() = false;
+						icon.translate(20, 0);
+					}
+				}
+			next_icon:;
+			}
+		}
+
+		// skill: can slow invaders for a while
+		void slow_invader(bool is_slow)
+		{
+			if (is_slow)
+			{
+				if (!is_invader_slow)
+				{
+					invader_velocity = invader_velocity / 3;
+					bomb_speed = bomb_speed / 3;
+				}
+			}
+			else
+			{
+				if (is_invader_slow)
+				{
+					invader_velocity = invader_velocity * 3;
+					bomb_speed = bomb_speed * 3;
+				}
+			}
+			is_invader_slow = is_slow;
+		}
+
+		void change_weapon(int type)
+		{
+			if (man.get_weapon().get_type() = type)
+			{
+				weapon new_weapon;
+				GLuint weapon_texture;
+				float w = 0.4f;
+				float h = 0.4f;
+				switch (type) {
+				case icon_lightning:
+					//change weapon info to player
+					new_weapon = weapon(icon_lightning, 1, 10, 300);
+					w = 1.1f;
+					h = 5.0f;
+					printf("lightning!!!");
+					break;
+				case icon_slow:
+					new_weapon = weapon(icon_slow, 5, 15, 300);
+					slow_invader(true);
+					printf("slow defender");
+					break;
+				case icon_star:
+					new_weapon = weapon(icon_star, 5, 5, 300);
+					printf("star motion");
+					break;
+				case icon_ball:
+					new_weapon = weapon(icon_ball, 5, 15, 0);
+					printf("become normal");
+					break;
+				default:
+					break;
+				}
+				man.get_weapon() = new_weapon;
+				missiles_disabled = man.get_weapon().get_disable_time();
+				weapon_texture = resource_dict::get_texture_handle(GL_RGBA, texture_position(type, type_weapon));
+				for (int i = 0; i != num_missiles; ++i) {
+					weapon_sprite[first_missile_sprite + i].init(weapon_texture, 50, 0, w, h);
+					weapon_sprite[first_missile_sprite + i].is_enabled() = false;
+				}
+			}
+		}
 			stage = 1;
 			missiles_disabled = 15;
 			bombs_disabled = 30;
@@ -680,4 +1044,19 @@ namespace octet {
 			is_invader_slow = false;
 			score = 0;
 			upY = 0;
+			// use the missile texture
+			GLuint missile = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/ball.gif");
+			for (int i = 0; i != num_missiles; ++i) {
+				// create missiles off-screen
+				weapon_sprite[first_missile_sprite + i].init(missile, 50, 10, 0.4f, 0.4f);
+				weapon_sprite[first_missile_sprite + i].is_enabled() = false;
+			}
+			// use the icon texture
+			GLuint icon = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/icon_lightning.gif");
+			for (int i = 0; i != num_icon; ++i) {
+				// create bombs off-screen
+				icon_sprite[first_icon_sprite + i].init(icon, 20, 0, 0.25f, 0.25f);
+				icon_sprite[first_icon_sprite + i].is_enabled() = false;
+			}
+			move_icon();
 }
