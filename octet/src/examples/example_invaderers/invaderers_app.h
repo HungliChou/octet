@@ -536,6 +536,94 @@ namespace octet {
       alListener3f(AL_POSITION, cpos.x(), cpos.y(), cpos.z());
     }
   };
+		void set_texture(int _texture)
+		{
+			texture = _texture;
+		}
+			num_max_stage = 3,
+			type_invader = 1,
+		void generate_invaders()
+		{
+			GLuint invaderer = resource_dict::get_texture_handle(GL_RGBA, texture_position(stage, type_invader));;
+			float w;
+			float h;
+			if (stage == 1)
+			{
+				w = 0.3f;
+				h = 0.4f;
+			}
+			else if (stage == 2)
+			{
+				w = 0.75f;
+				h = 0.4f;
+			}
+			else if (stage == 3)
+			{
+				w = 0.4f;
+				h = 0.4f;
+			}
+			for (int j = 0; j != num_rows; ++j) {
+				for (int i = 0; i != num_cols; ++i) {
+					assert(first_invaderer_sprite + i + j*num_cols <= last_invaderer_sprite);
+					invader_sprite[first_invaderer_sprite + i + j*num_cols].init(
+						invaderer, ((float)i - num_cols * 0.5f) * 0.5f, 2.50f - ((float)j * 0.5f), w, h
+					);
+					invader_sprite[first_invaderer_sprite + i + j*num_cols].set_level(stage);
+				}
+			}
+		}
+
+		//set the new stage for the game
+		void set_next_stage()
+		{
+			stage++;
+			invader_velocity = 0.01f;
+			live_invaderers = num_invaderers;
+			//TODO regenerate invaders which have new level.
+			generate_invaders();
+		}
+
+		//find the texture route in the asset folder
+		char* texture_position(int value, int type)
+		{
+			char path_array[500];
+			char *path = "assets/invaderers/invader1_1.gif";
+			if (type == type_invader)
+			{
+				char num[10];
+				char lives_array[10];
+
+				sprintf(num, "%d", stage);
+				sprintf(lives_array, "%d", value);
+				sprintf(path_array, "assets/invaderers/invader%s_%s.gif", num, lives_array);
+
+				switch (stage)
+				{
+				case 1:
+					if (value == 1)
+						path = "assets/invaderers/invader1_1.gif";
+					break;
+				case 2:
+					if (value == 1)
+						path = "assets/invaderers/invader2_1.gif";
+					else if (value == 2)
+						path = "assets/invaderers/invader2_2.gif";
+					break;
+				case 3:
+					if (value == 1)
+						path = "assets/invaderers/invader3_1.gif";
+					else if (value == 2)
+						path = "assets/invaderers/invader3_2.gif";
+					else if (value == 3)
+						path = "assets/invaderers/invader3_3.gif";
+					break;
+				default:
+					break;
+				}
+				//path = path_array;
+			}
+			return path;
+		}
 		// use the keyboard to move the ship
 		void move_ship() {
 			const float ship_speed = 0.1f;
