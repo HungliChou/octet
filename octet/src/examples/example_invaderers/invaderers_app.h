@@ -536,4 +536,60 @@ namespace octet {
       alListener3f(AL_POSITION, cpos.x(), cpos.y(), cpos.z());
     }
   };
+		// use the keyboard to move the ship
+		void move_ship() {
+			const float ship_speed = 0.1f;
+
+			//player &player = man;
+			// left and right arrows
+			if (is_key_down(key_left)) {
+				man.translate(-ship_speed, 0);
+				if (man.collides_with(sprites[first_border_sprite + 2])) {
+					man.translate(+ship_speed, 0);
+				}
+			}
+			else if (is_key_down(key_right)) {
+				man.translate(+ship_speed, 0);
+				if (man.collides_with(sprites[first_border_sprite + 3])) {
+					man.translate(-ship_speed, 0);
+				}
+			}
+
+			//TODO
+			//move up and down
+			//TODO
+			//give limit of key_up
+			else if (is_key_down(key_up)) {
+
+				if (man.is_enabled() && upY<2)
+				{
+					man.translate(0, +ship_speed);
+					if (man.collides_with(sprites[first_border_sprite + 1])) {
+						man.translate(0, -ship_speed);
+					}
+					else
+						upY += ship_speed;
+				}
+
+			}
+			else if (is_key_down(key_down)) {
+				man.translate(0, -ship_speed);
+				if (man.collides_with(sprites[first_border_sprite])) {
+					man.translate(0, +ship_speed);
+				}
+				else
+					upY -= ship_speed;
+			}
+		}
+			stage = 1;
+			missiles_disabled = 15;
+			bombs_disabled = 30;
+			icon_disabled = 0;
+			invader_velocity = 0.01f;
+			bomb_speed = 0.2f;
+			live_invaderers = num_invaderers;
+			game_over = false;
+			is_invader_slow = false;
+			score = 0;
+			upY = 0;
 }
