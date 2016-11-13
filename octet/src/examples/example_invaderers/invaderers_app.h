@@ -619,17 +619,27 @@ namespace octet {
 
 	class player : public sprite {
 		int lives;
+		int max_lives;
+		int cur_lives;
+		int hit_timer;
+		int accumulated_hurt;
+
 		weapon my_weapon;
+		vector<condition> my_condition;
 	public:
-		player() { lives = 6; }
-		player(int _lives) { lives = _lives; }
+		player() { cur_lives = 100; max_lives = 100; accumulated_hurt = 0; }
+		player(int _lives) { cur_lives = _lives; max_lives = _lives; }
+
+		int &get_max_lives() { return max_lives; }
 
 		//return lives
-		int &get_lives() { return lives; }
+		int &get_lives() { return cur_lives; }
 
-		// change different weapons
-		//void set_weapon(weapon _weapon){my_weapon = _weapon;}
+		//return accumulated damage to enemy value
+		int &get_accumulated_hurt() { return accumulated_hurt; }
 
+		////return percentage of health bar size
+		float get_lives_rate_bar() { return (max_lives-(float)accumulated_hurt/2) / (float)max_lives; }
 		weapon &get_weapon() { return my_weapon; }
 	};
 			num_icon = 4,
@@ -1138,6 +1148,12 @@ namespace octet {
 					weapon_sprite[first_missile_sprite + i].is_enabled() = false;
 				}
 			}
+		}
+		//updating health and energy bar sprites based on their actual values.
+		void checking_bar()
+		{
+			health_bar[bar_value].toPos(-(bar_halfwidth - bar_halfwidth*man.get_lives_rate_bar()), -2.9f, bar_halfwidth*man.get_lives_rate_bar(), 0.1f);
+			energy_bar[bar_value].toPos(-(bar_halfwidth - bar_halfwidth*man.get_weapon().get_energy_rate()), -2.7f,bar_halfwidth*man.get_weapon().get_energy_rate(), 0.1f);
 		}
 			stage = 1;
 			missiles_disabled = 15;
