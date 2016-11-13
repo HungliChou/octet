@@ -540,6 +540,22 @@ namespace octet {
 		{
 			texture = _texture;
 		}
+		void render(texture_shader &shader, mat4t &cameraToWorld, vec4 color) {
+			// invisible sprite... used for gameplay.
+			if (!texture) return;
+
+			// build a projection matrix: model -> world -> camera -> projection
+			// the projection space is the cube -1 <= x/w, y/w, z/w <= 1
+			mat4t modelToProjection = mat4t::build_projection_matrix(modelToWorld, cameraToWorld);
+			
+			// set up opengl to draw textured triangles using sampler 0 (GL_TEXTURE0)
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, texture);
+			//printf("%f", color[1]);
+			// use "old skool" rendering
+			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			shader.render(modelToProjection, 0, color);
 	class weapon : public sprite {
 		//the type of weapon
 		int type;
@@ -1149,4 +1165,46 @@ namespace octet {
 				icon_sprite[first_icon_sprite + i].is_enabled() = false;
 			}
 			move_icon();
+			// draw all the sprites
+			for (int i = 0; i != num_sprites; ++i) {
+				if (i != game_over_sprite && i != background)
+					//draw borders
+					sprites[i].render(texture_shader_, cameraToWorld, default_color);
+				else if(i == background)
+					//draw background
+					sprites[background].render(texture_shader_, cameraToWorld, background_color);
+			}
+			
+			for (int i = 0; i != num_invaderers; ++i) {
+				//draw enemies
+				invader_sprite[i].render(texture_shader_, cameraToWorld, default_color);
+				//draw explosion under each enemies
+				explosion_sprite[i].render(texture_shader_, cameraToWorld, default_color);
+			}
+			for (int i = 0; i != num_weapon_sprites; ++i) {
+				//draw weapons
+				weapon_sprite[i].render(texture_shader_, cameraToWorld, default_color);
+			}
+			for (int i = 0; i != num_icon; ++i) {
+				//draw icons
+				icon_sprite[i].render(texture_shader_, cameraToWorld, default_color);
+			}
+			for (int i = 0; i != num_conditions; ++i) {
+				//draw buff conditions
+				condition_sprite[i].render(texture_shader_, cameraToWorld, default_color);
+			}
+
+			//draw player
+			man.render(texture_shader_, cameraToWorld, man_color);
+
+			//draw energy and health bars
+			health_bar[bar_base].render(texture_shader_, cameraToWorld, default_color);
+			health_bar[bar_value].render(texture_shader_, cameraToWorld, vec4(1, 0, 0, 1));
+			energy_bar[bar_base].render(texture_shader_, cameraToWorld, default_color);
+			energy_bar[bar_value].render(texture_shader_, cameraToWorld, default_color);
+			
+			
+
+			//draw game over sprite in red color 
+			sprites[game_over_sprite].render(texture_shader_, cameraToWorld, vec4(1,0,0,1));
 }
