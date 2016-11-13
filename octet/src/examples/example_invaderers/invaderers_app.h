@@ -658,14 +658,104 @@ namespace octet {
 			float w;
 			float h;
 			if (stage == 1)
+		//data vectors (store values loaded from files)
+		vector<float> enemy_w;
+		vector<float> enemy_h;
+		vector<int> enemy_power;
+		vector<int> enemy_lives;
+		vector<int> weapon_power;
+		vector<int> weapon_disable_timer;
+		vector<int> weapon_energy;
+		vector<int> condition_energy;
+
+		//load game data from csv and txt files.
+		void load_data() {
+			//load enemy ability to vector
+			std::ifstream is("enemy.csv");
+			if (is.good())
 			{
-				w = 0.3f;
-				h = 0.4f;
+				// store the line here
+				char buffer[2048];
+				int type = 0;
+				// loop over lines
+				while (!is.eof()) {
+					is.getline(buffer,sizeof(buffer));
+					if (*buffer != '-')
+					{
+						if (type == 0)
+						{
+							enemy_w.push_back(atof(buffer));
+							type++;
+						}
+						else if (type == 1)
+						{
+							enemy_h.push_back(atof(buffer));
+							type++;
+						}
+						else if (type == 2)
+						{
+							enemy_lives.push_back(atoi(buffer));
+							type++;
+						}
+						else
+						{
+							enemy_power.push_back(atoi(buffer));
+							type = 0;
+						}
+					}	
+				}
 			}
-			else if (stage == 2)
+
+			//load icon(weapon and condition) ability to vector
+			std::ifstream is2("icon.txt");
+			if (is2.good())
 			{
-				w = 0.75f;
-				h = 0.4f;
+				// store the line here
+				char buffer[2048];
+				//data type
+				int type = 0;
+				//weapon->0 or conditio->1
+				int format = 0;
+				// loop over lines
+				while (!is2.eof()) {
+					is2.getline(buffer, sizeof(buffer));
+					if (format == 0)
+					{
+						if (*buffer != '-' && *buffer != '+')
+						{
+							if (type == 0)
+							{
+								weapon_power.push_back(atoi(buffer));
+								type++;
+							}
+							else if (type == 1)
+							{
+								weapon_disable_timer.push_back(atoi(buffer));
+								type++;
+							}
+							else if (type == 2)
+							{
+								weapon_energy.push_back(atoi(buffer));
+								type = 0;
+							}
+						}
+						else if (*buffer == '+')
+						{
+							format++;
+						}
+					}
+					else
+					{
+						if (*buffer != '+')
+						{
+							condition_energy.push_back(atoi(buffer));
+						}
+					}
+					
+				}
+			}
+
+		}
 			}
 			else if (stage == 3)
 			{
